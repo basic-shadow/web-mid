@@ -1,0 +1,199 @@
+{
+  "info": {
+    "_postman_id": "2b14764e-1bb2-4f77-9b02-f2d61c4e28a1",
+    "name": "Task Tracker API",
+    "description": "Runnable CRUD collection for the Task Tracker API. Run the collection in order; the Create request stores its returned ID in the taskId collection variable for later requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "API welcome",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/",
+        "description": "Returns the API name/version and links to the docs and health endpoint."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Welcome endpoint returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Docs path is advertised', function () { pm.expect(pm.response.json().docs).to.eql('/docs'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "Confirms both the API process and its database connection are healthy."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Health endpoint returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Database is healthy', function () { pm.expect(pm.response.json().database).to.eql('ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/tasks?limit=100&offset=0",
+        "description": "Lists tasks. Optional query parameters: status=todo|in_progress|done, limit=1..100, offset=0+."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('List returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is an array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create task",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Prepare project demo\",\n  \"description\": \"Finish the demo and verify the API.\",\n  \"status\": \"todo\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/v1/tasks",
+        "description": "Creates a task and stores the returned ID in the taskId collection variable."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Task is created', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('Created task has an ID', function () { pm.expect(body.id).to.be.a('number'); });",
+              "pm.collectionVariables.set('taskId', String(body.id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get task by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}",
+        "description": "Uses the ID saved by Create task."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Task is found', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returned ID matches taskId', function () { pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('taskId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update task (PUT replace)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Prepare final project demo\",\n  \"description\": \"Demo the complete containerized app.\",\n  \"status\": \"in_progress\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}",
+        "description": "Replaces all editable fields of the selected task."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Task is replaced', function () { pm.response.to.have.status(200); });",
+              "pm.test('Title was updated', function () { pm.expect(pm.response.json().title).to.eql('Prepare final project demo'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete task",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}",
+        "description": "Deletes the task created by this collection run."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Task is deleted', function () { pm.response.to.have.status(204); });",
+              "pm.collectionVariables.unset('taskId');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
